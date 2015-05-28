@@ -196,6 +196,7 @@ class BuildSlavesResource(HtmlResource):
             info['version'] = slave.getVersion()
             info['connected'] = slave.isConnected()
             info['connectCount'] = slave.getConnectCount()
+            info['dutyCycles'] = determine_duty_cycle(name, s, slave)
             info['paused'] = slave.isPaused()
 
             info['admin'] = slave.getAdmin() or u''
@@ -215,3 +216,72 @@ class BuildSlavesResource(HtmlResource):
             return OneBuildSlaveResource(path)
         except KeyError:
             return NoResource("No such slave '%s'" % html.escape(path))
+
+
+def between(a, n, b):
+    if a <= n and n < b:
+        return True
+
+
+def add_to_buckets(num_buckets, buckets, bucket_size, start, end, now):
+    for n in range(num_buckets):
+        bucket_start = now - (n + 1) * bucket_size
+        bucket_end   = now -  n      * bucket_size
+
+        start_before_bucket = start < bucket_start
+        start_after_bucket = start > bucket_end
+        start_in_bucket = between(bucket_start, start, bucket_end)
+
+        end_before_bucket = end < bucket_start
+        end_after_bucket = end > bucket_end
+        end_in_bucket = between(bucket_start, end, bucket_end)
+
+        if end_before_bucket or start_after_bucket:
+            continue
+
+        if start_in_bucket and end_in_bucket:
+            buckets[n] += end - start
+        elif start_in_bucket:
+            buckets[n] += bucket_end - start
+        elif end_in_bucket:
+            buckets[n] += end - bucket_start
+        elif start_before_bucket and end_after_bucket:
+            buckets[n] += 1
+
+
+def determine_duty_cycle(name, status, slave):
+    # Compute numbers for the last week.
+    num_buckets = 7
+    buckets = [0] * num_buckets
+
+    now = util.now()
+    bucket_size = 60 * 60 * 24
+
+    bucket_reach = now - num_buckets * bucket_size
+
+    my_builders = []
+    for bname in status.getBuilderNames():
+        b = status.getBuilder(bname)
+        for bs in b.getSlaves():
+            if bs.getName() == name:
+                my_builders.append(b)
+
+    # Current builds
+    current_builds = []
+    for b in my_builders:
+        for cb in b.getCurrentBuilds():
+            if cb.getSlavename() == name:
+                start, end = cb.getTimes()
+                add_to_buckets(num_buckets, buckets, bucket_size, start, end, now)
+
+    for rb in status.generateFinishedBuilds(builders=[b.getName() for b in my_builders]):
+        if rb.getSlavename() == name:
+            start, end = rb.getTimes()
+            if end < bucket_reach:
+                break
+            add_to_buckets(num_buckets, buckets, bucket_size, start, end, now)
+
+    for n in range(num_buckets):
+        buckets[n] /= bucket_size
+
+    return buckets

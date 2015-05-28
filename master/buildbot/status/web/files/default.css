@@ -639,3 +639,19 @@ form.command_forcebuild .force-nested > .label {
 form.command_forcebuild .force-any .force-text {
     display: inline;
 }
+
+.duty_cycle {
+    width: 40%;
+    height: 10px;
+    background: #9c9c9c;
+    padding: 2px;
+    margin: 2px;
+}
+
+.duty_cycle > span {
+    display: block;
+    height: 100%;
+    background: #ff0000;
+    position: relative;
+    overflow: hidden;
+}

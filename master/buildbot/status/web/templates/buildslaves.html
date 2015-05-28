@@ -17,6 +17,7 @@
   <th>Admin</th>
   <th>Last heard from</th>
   <th>Connects/Hour</th>
+  <th>Duty cycle</th>
   <th>Status</th>
 </tr>
 
@@ -52,6 +53,13 @@
     </td>
     <td>
     {{ s.connectCount }}
+    </td>
+    <td>
+    {%- for dc in s.dutyCycles %}
+      <div class="duty_cycle">
+        <span style="width: {{ 100 * dc }}%"></span>
+      </div>
+    {%- endfor %}
     </td>
         
   {% if s.connected %}
