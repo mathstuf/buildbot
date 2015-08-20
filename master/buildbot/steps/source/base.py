@@ -302,3 +302,11 @@ class Source(LoggingBuildStep, CompositeStepMixin):
             patch = None
 
         self.startVC(branch, revision, patch)
+
+    def _updateEnvironment(self, env):
+        full_env = env
+        if self.build.slaveEnvironment:
+            full_env = self.build.slaveEnvironment.copy()
+            if env is not None:
+                full_env.update(env)
+        return full_env

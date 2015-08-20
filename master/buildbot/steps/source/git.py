@@ -339,9 +339,10 @@ class Git(Source):
                 full_command.append('-c')
                 full_command.append('%s=%s' % (name, value))
         full_command.extend(command)
+        full_env = self._updateEnvironment(self.env)
         cmd = buildstep.RemoteShellCommand(self.workdir,
                                            full_command,
-                                           env=self.env,
+                                           env=full_env,
                                            logEnviron=self.logEnviron,
                                            timeout=self.timeout,
                                            collectStdout=collectStdout,
