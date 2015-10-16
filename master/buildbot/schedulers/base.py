@@ -435,7 +435,7 @@ class BaseScheduler(service.MultiService, ComparableMixin, StateMixin):
             properties = self.properties
 
         # apply the default builderNames
-        if not builderNames:
+        if builderNames is None:
             builderNames = self.builderNames
 
         # translate properties object into a dict as required by the
